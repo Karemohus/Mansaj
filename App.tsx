@@ -477,6 +477,7 @@ const PublicSite: React.FC = () => {
                          <button 
                              key={client.id} 
                              onClick={() => setSelectedClient(client)}
+                             onTouchStart={() => {}}
                              className="relative group animate-on-scroll animate-fade-up focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-4 focus-visible:ring-offset-[#242424] rounded-md" 
                              style={{transitionDelay: `${index * 100}ms`}}
                              aria-label={`عرض تفاصيل ${client.name}`}
