@@ -82,7 +82,13 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
             if(section === 'furniture'){
                 list.push({ id: Date.now(), name: "منتج جديد", imageUrl: "https://source.unsplash.com/800x800/?furniture&" + Date.now() });
             } else if (section === 'clients') {
-                list.push({ id: Date.now(), name: "عميل جديد", logoUrl: "https://picsum.photos/200/100?grayscale&random=" + Date.now() });
+                list.push({ 
+                    id: Date.now(), 
+                    name: "عميل جديد", 
+                    logoUrl: "https://picsum.photos/200/100?grayscale&random=" + Date.now(),
+                    description: "وصف موجز عن العميل أو المشروع.",
+                    websiteUrl: "https://example.com"
+                });
             }
             return newContent;
         });
@@ -142,10 +148,14 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
                         <InputField label="عنوان القسم" value={content.clients.title} onChange={e => handleFieldChange('clients', 'title', e.target.value)} />
                          <div className="space-y-4 mt-4">
                             {content.clients.items.map((item, index) => (
-                                <div key={item.id} className="flex items-center gap-2 p-2 bg-gray-800 rounded">
-                                    <input type="text" value={item.name} onChange={e => handleListItemChange('clients', 'items', index, 'name', e.target.value)} className="flex-grow bg-gray-700 p-1 rounded border-transparent focus:ring-amber-500 focus:border-amber-500" placeholder="اسم العميل"/>
-                                    <input type="text" value={item.logoUrl} onChange={e => handleListItemChange('clients', 'items', index, 'logoUrl', e.target.value)} className="flex-grow bg-gray-700 p-1 rounded border-transparent focus:ring-amber-500 focus:border-amber-500" placeholder="رابط الشعار"/>
-                                    <button onClick={() => handleRemoveItem('clients', 'items', item.id)} className="text-red-500 text-xs px-2 hover:text-red-400">حذف</button>
+                                <div key={item.id} className="p-4 bg-gray-800 rounded space-y-3">
+                                    <div className="flex items-center gap-2">
+                                      <input type="text" value={item.name} onChange={e => handleListItemChange('clients', 'items', index, 'name', e.target.value)} className="flex-grow bg-gray-700 p-1 rounded border-transparent focus:ring-amber-500 focus:border-amber-500" placeholder="اسم العميل"/>
+                                      <button onClick={() => handleRemoveItem('clients', 'items', item.id)} className="text-red-500 text-xs px-2 hover:text-red-400">حذف</button>
+                                    </div>
+                                    <input type="text" value={item.logoUrl} onChange={e => handleListItemChange('clients', 'items', index, 'logoUrl', e.target.value)} className="w-full bg-gray-700 p-1 rounded border-transparent focus:ring-amber-500 focus:border-amber-500" placeholder="رابط الشعار"/>
+                                    <TextareaField label="" value={item.description} onChange={e => handleListItemChange('clients', 'items', index, 'description', e.target.value)} placeholder="وصف العميل" />
+                                    <input type="text" value={item.websiteUrl} onChange={e => handleListItemChange('clients', 'items', index, 'websiteUrl', e.target.value)} className="w-full bg-gray-700 p-1 rounded border-transparent focus:ring-amber-500 focus:border-amber-500" placeholder="رابط الموقع الإلكتروني"/>
                                 </div>
                             ))}
                         </div>
@@ -184,10 +194,10 @@ const InputField: React.FC<{ label: string, value: string, onChange: (e: React.C
         <input type="text" value={value} onChange={onChange} className="w-full bg-gray-800 border border-gray-600 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-amber-500" />
     </div>
 );
-const TextareaField: React.FC<{ label: string, value: string, onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void }> = ({ label, value, onChange }) => (
+const TextareaField: React.FC<{ label: string, value: string, onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void, placeholder?: string }> = ({ label, value, onChange, placeholder }) => (
     <div>
-        <label className="block text-sm font-medium text-gray-300 mb-1">{label}</label>
-        <textarea value={value} onChange={onChange} rows={4} className="w-full bg-gray-800 border border-gray-600 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-amber-500"></textarea>
+        {label && <label className="block text-sm font-medium text-gray-300 mb-1">{label}</label>}
+        <textarea value={value} onChange={onChange} rows={2} placeholder={placeholder} className="w-full bg-gray-800 border border-gray-600 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-amber-500"></textarea>
     </div>
 );
 

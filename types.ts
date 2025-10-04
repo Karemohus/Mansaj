@@ -9,6 +9,8 @@ export interface Client {
   id: number;
   name: string;
   logoUrl: string;
+  description: string;
+  websiteUrl: string;
 }
 
 export interface SiteContent {
