@@ -479,14 +479,16 @@ const PublicSite: React.FC = () => {
                             className="animate-on-scroll animate-fade-up"
                             style={{transitionDelay: `${index * 100}ms`}}
                          >
-                            <button 
+                            <div 
+                                 role="button"
+                                 tabIndex={0}
                                  onClick={() => setSelectedClient(client)}
-                                 onTouchStart={() => {}}
-                                 className="relative group focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-4 focus-visible:ring-offset-[#242424] rounded-md" 
+                                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedClient(client); }}}
+                                 className="relative group cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-4 focus-visible:ring-offset-[#242424] rounded-md" 
                                  aria-label={`عرض تفاصيل ${client.name}`}
                              >
                                 <img src={client.logoUrl} alt={client.name} className="h-12 md:h-16 object-contain transition-all duration-300 filter grayscale group-hover:grayscale-0 group-hover:scale-110" />
-                             </button>
+                             </div>
                          </div>
                     ))}
                 </div>
