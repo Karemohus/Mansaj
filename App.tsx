@@ -81,13 +81,12 @@ const ClientModal: React.FC<{ client: Client, onClose: () => void }> = ({ client
             </svg>
           </button>
           <div className="flex flex-col sm:flex-row items-center gap-6 text-center sm:text-right">
-            <div className="w-32 h-32 flex-shrink-0 bg-white p-2 rounded-md flex items-center justify-center">
+            <div className="w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0 bg-white p-2 rounded-md flex items-center justify-center">
               <img src={client.logoUrl} alt={client.name} className="max-w-full max-h-full object-contain" />
             </div>
             <div>
-              {/* FIX: Changed invalid HTML tag <hh2> to <h2> */}
-              <h2 className="text-3xl font-bold text-amber-400 mb-2">{client.name}</h2>
-              <p className="text-gray-300 leading-relaxed mb-4">{client.description}</p>
+              <h2 className="text-2xl sm:text-3xl font-bold text-amber-400 mb-2">{client.name}</h2>
+              <p className="text-base text-gray-300 leading-relaxed mb-4">{client.description}</p>
               {client.websiteUrl && (
                 <a 
                   href={client.websiteUrl} 
