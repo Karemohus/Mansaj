@@ -474,16 +474,20 @@ const PublicSite: React.FC = () => {
                 </div>
                 <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-8">
                     {content.clients.items.map((client, index) => (
-                         <button 
-                             key={client.id} 
-                             onClick={() => setSelectedClient(client)}
-                             onTouchStart={() => {}}
-                             className="relative group animate-on-scroll animate-fade-up focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-4 focus-visible:ring-offset-[#242424] rounded-md" 
-                             style={{transitionDelay: `${index * 100}ms`}}
-                             aria-label={`عرض تفاصيل ${client.name}`}
+                         <div 
+                            key={client.id}
+                            className="animate-on-scroll animate-fade-up"
+                            style={{transitionDelay: `${index * 100}ms`}}
                          >
-                            <img src={client.logoUrl} alt={client.name} className="h-12 md:h-16 object-contain transition-all duration-300 filter grayscale group-hover:grayscale-0 group-hover:scale-110" />
-                         </button>
+                            <button 
+                                 onClick={() => setSelectedClient(client)}
+                                 onTouchStart={() => {}}
+                                 className="relative group focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-4 focus-visible:ring-offset-[#242424] rounded-md" 
+                                 aria-label={`عرض تفاصيل ${client.name}`}
+                             >
+                                <img src={client.logoUrl} alt={client.name} className="h-12 md:h-16 object-contain transition-all duration-300 filter grayscale group-hover:grayscale-0 group-hover:scale-110" />
+                             </button>
+                         </div>
                     ))}
                 </div>
             </div>
