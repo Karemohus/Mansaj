@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import type { SiteContent, Client, FurnitureItem } from './types';
 import { EditableText, EditableImage } from './components/Editable';
@@ -169,6 +168,74 @@ const FurnitureModal: React.FC<{ item: FurnitureItem, onClose: () => void }> = (
   );
 };
 
+const SeoStructuredData: React.FC<{ content: SiteContent }> = ({ content }) => {
+  useEffect(() => {
+    const scripts: HTMLScriptElement[] = [];
+    const siteUrl = window.location.origin;
+
+    // Organization Schema
+    const orgSchema = {
+      "@context": "https://schema.org",
+      "@type": "FurnitureStore",
+      "name": "منسج للأثاث",
+      "url": siteUrl,
+      "logo": `${siteUrl}/favicon.svg`,
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "الأحساء",
+        "addressCountry": "SA",
+        "streetAddress": content.contact.address
+      },
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "telephone": content.contact.phone,
+        "contactType": "customer service",
+        "email": content.contact.email
+      }
+    };
+    const orgScript = document.createElement('script');
+    orgScript.type = 'application/ld+json';
+    orgScript.innerHTML = JSON.stringify(orgSchema);
+    document.head.appendChild(orgScript);
+    scripts.push(orgScript);
+
+    // Products Schema
+    if (content.furniture.items.length > 0) {
+        const productSchema = {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": "منتجات أثاث منسج",
+        "description": "استكشف تشكيلتنا من الأثاث المنزلي والمكتبي والمشاريع الفندقية المصممة خصيصًا.",
+        "itemListElement": content.furniture.items.map((item, index) => ({
+            "@type": "ListItem",
+            "position": index + 1,
+            "item": {
+            "@type": "Product",
+            "name": item.name,
+            "image": item.imageUrl,
+            "description": `أثاث ${item.name} عالي الجودة ومصمم بعناية من منسج.`,
+            "brand": {
+                "@type": "Brand",
+                "name": "منسج للأثاث"
+            }
+            }
+        }))
+        };
+        const productScript = document.createElement('script');
+        productScript.type = 'application/ld+json';
+        productScript.innerHTML = JSON.stringify(productSchema);
+        document.head.appendChild(productScript);
+        scripts.push(productScript);
+    }
+
+    return () => {
+      scripts.forEach(s => document.head.removeChild(s));
+    };
+  }, [content]);
+
+  return null; // This component does not render anything to the DOM
+};
+
 
 const PublicSite: React.FC = () => {
   const [content, setContent] = useState<SiteContent>(initialContent);
@@ -176,13 +243,11 @@ const PublicSite: React.FC = () => {
   const [activeSection, setActiveSection] = useState('hero');
   const [scrollProgress, setScrollProgress] = useState(0);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const [showPhoneOptions, setShowPhoneOptions] = useState(false);
   const [selectedFurniture, setSelectedFurniture] = useState<FurnitureItem | null>(null);
   const [canScroll, setCanScroll] = useState({ left: false, right: true });
 
 
   const containerRef = useIntersectionObserver({ threshold: 0.1 });
-  const phoneOptionsRef = useRef<HTMLDivElement>(null);
   const furnitureScrollRef = useRef<HTMLDivElement>(null);
 
   const handleFurnitureScroll = (direction: 'left' | 'right') => {
@@ -308,19 +373,6 @@ const PublicSite: React.FC = () => {
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-    useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-        if (phoneOptionsRef.current && !phoneOptionsRef.current.contains(event.target as Node)) {
-            setShowPhoneOptions(false);
-        }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
   
   const navLinkClasses = (sectionId: string) => 
     `relative transition-colors duration-300 ${activeSection === sectionId ? 'text-amber-400 font-bold' : 'hover:text-amber-400'} after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-0 after:h-0.5 after:bg-amber-400 after:transition-all after:duration-300 ${activeSection === sectionId ? 'after:w-full' : 'hover:after:w-full'}`;
@@ -335,6 +387,7 @@ const PublicSite: React.FC = () => {
 
   return (
     <div ref={containerRef} className="bg-[#1a1a1a] text-white selection:bg-amber-500 selection:text-black">
+      <SeoStructuredData content={content} />
       <style>{`
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
@@ -502,41 +555,31 @@ const PublicSite: React.FC = () => {
                 </div>
                 <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
                     <div 
-                        ref={phoneOptionsRef}
-                        className="relative group flex flex-col items-center p-8 bg-[#242424] rounded-lg transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/10 hover:-translate-y-2 animate-on-scroll animate-fade-up" 
+                        className="group flex flex-col items-center p-8 bg-[#242424] rounded-lg transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/10 hover:-translate-y-2 animate-on-scroll animate-fade-up" 
                         style={{transitionDelay: `100ms`}}
                     >
-                        <div onClick={() => setShowPhoneOptions(prev => !prev)} className="cursor-pointer flex flex-col items-center w-full">
-                            <PhoneIcon className="w-12 h-12 text-amber-400 mb-4 transition-transform duration-300 group-hover:scale-110"/>
-                            <h3 className="text-xl font-semibold mb-2">الهاتف</h3>
-                            <EditableText as="p" isAdmin={false} value={content.contact.phone} onChange={()=>{}} className="text-gray-300"/>
+                        <PhoneIcon className="w-12 h-12 text-amber-400 mb-4 transition-transform duration-300 group-hover:scale-110"/>
+                        <h3 className="text-xl font-semibold mb-2">الهاتف</h3>
+                        <div className="flex items-center gap-4">
+                            <a href={`tel:${content.contact.phone.replace(/\s/g, '')}`} className="text-gray-300 hover:text-amber-400 transition-colors">
+                                <EditableText as="span" isAdmin={false} value={content.contact.phone} onChange={()=>{}} className=""/>
+                            </a>
+                            <a
+                                href={`https://wa.me/${content.contact.phone.replace(/[\s+]/g, '')}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label={`مراسلة ${content.contact.phone} على واتساب`}
+                                className="text-green-500 hover:text-green-400 transition-transform hover:scale-110"
+                            >
+                                <WhatsAppIcon className="w-7 h-7"/>
+                            </a>
                         </div>
-                        {showPhoneOptions && (
-                            <div className="absolute bottom-full mb-3 w-[calc(100%-2rem)] bg-[#333] rounded-lg shadow-xl p-2 z-20 animate-pop-up">
-                                <a 
-                                    href={`tel:${content.contact.phone.replace(/\s/g, '')}`} 
-                                    className="flex items-center justify-start gap-3 w-full text-right px-3 py-2 text-sm text-white rounded-md hover:bg-amber-500 hover:text-black transition-colors"
-                                >
-                                    <PhoneIcon className="w-5 h-5"/>
-                                    <span>اتصال</span>
-                                </a>
-                                <a 
-                                    href={`https://wa.me/${content.contact.phone.replace(/[\s+]/g, '')}`} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="flex items-center justify-start gap-3 w-full text-right px-3 py-2 text-sm text-white rounded-md hover:bg-green-500 hover:text-white transition-colors"
-                                >
-                                    <WhatsAppIcon className="w-5 h-5"/>
-                                    <span>واتساب</span>
-                                </a>
-                            </div>
-                        )}
                     </div>
-                    <div className="group flex flex-col items-center p-8 bg-[#242424] rounded-lg transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/10 hover:-translate-y-2 animate-on-scroll animate-fade-up" style={{transitionDelay: `200ms`}}>
+                    <a href={`mailto:${content.contact.email}`} className="group flex flex-col items-center p-8 bg-[#242424] rounded-lg transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/10 hover:-translate-y-2 animate-on-scroll animate-fade-up" style={{transitionDelay: `200ms`}}>
                         <MailIcon className="w-12 h-12 text-amber-400 mb-4 transition-transform duration-300 group-hover:scale-110"/>
                         <h3 className="text-xl font-semibold mb-2">البريد الإلكتروني</h3>
                         <EditableText as="p" isAdmin={false} value={content.contact.email} onChange={()=>{}} className="text-gray-300"/>
-                    </div>
+                    </a>
                     <div className="group flex flex-col items-center p-8 bg-[#242424] rounded-lg transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/10 hover:-translate-y-2 animate-on-scroll animate-fade-up" style={{transitionDelay: `300ms`}}>
                         <LocationIcon className="w-12 h-12 text-amber-400 mb-4 transition-transform duration-300 group-hover:scale-110"/>
                         <h3 className="text-xl font-semibold mb-2">العنوان</h3>
@@ -559,6 +602,16 @@ const PublicSite: React.FC = () => {
           <p>&copy; {new Date().getFullYear()} شركة منسج للأثاث. جميع الحقوق محفوظة.</p>
         </div>
       </footer>
+      
+      <a
+        href={`https://wa.me/${content.contact.phone.replace(/[\s+]/g, '')}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="تواصل معنا عبر واتساب"
+        className={`fixed bottom-8 right-8 z-40 bg-green-500 text-white rounded-full w-16 h-16 flex items-center justify-center shadow-2xl transition-all duration-300 ease-in-out transform hover:scale-110 hover:bg-green-600 ${scrolled ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+      >
+        <WhatsAppIcon className="w-8 h-8" />
+      </a>
 
       {selectedClient && <ClientModal client={selectedClient} onClose={() => setSelectedClient(null)} />}
       {selectedFurniture && <FurnitureModal item={selectedFurniture} onClose={() => setSelectedFurniture(null)} />}
