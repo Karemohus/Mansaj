@@ -360,20 +360,20 @@ const PublicSite: React.FC = () => {
   const [scrollProgress, setScrollProgress] = useState(0);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [selectedFurniture, setSelectedFurniture] = useState<FurnitureItem | null>(null);
-  const [canScroll, setCanScroll] = useState({ left: false, right: true });
-
-
+  
   const containerRef = useIntersectionObserver({ threshold: 0.1 });
+  
+  // States and refs for carousels
   const furnitureScrollRef = useRef<HTMLDivElement>(null);
+  const storeScrollRef = useRef<HTMLDivElement>(null);
+  const [canScroll, setCanScroll] = useState({ left: false, right: true });
+  const [canStoreScroll, setCanStoreScroll] = useState({ left: false, right: true });
 
   const handleFurnitureScroll = (direction: 'left' | 'right') => {
     const container = furnitureScrollRef.current;
     if (container && container.children.length > 1) {
         const firstItem = container.children[0] as HTMLElement;
         const secondItem = container.children[1] as HTMLElement;
-
-        // Calculate the scroll distance by measuring the offset between the start of the first and second items.
-        // This is more robust as it includes the item's width and the gap between items.
         const scrollAmount = secondItem.offsetLeft - firstItem.offsetLeft;
 
         container.scrollBy({
@@ -382,6 +382,20 @@ const PublicSite: React.FC = () => {
         });
     }
   };
+  
+  const handleStoreScroll = (direction: 'left' | 'right') => {
+    const container = storeScrollRef.current;
+    if (container && container.children.length > 1) {
+        const firstItem = container.children[0] as HTMLElement;
+        const secondItem = container.children[1] as HTMLElement;
+        const scrollAmount = secondItem.offsetLeft - firstItem.offsetLeft;
+        container.scrollBy({
+            left: direction === 'right' ? scrollAmount : -scrollAmount,
+            behavior: 'smooth',
+        });
+    }
+  };
+
 
   const handleScrollCheck = useCallback(() => {
     const container = furnitureScrollRef.current;
@@ -400,32 +414,62 @@ const PublicSite: React.FC = () => {
         atStart = true;
         atEnd = true;
     } else if (isRtl) {
-        // Heuristic to detect Firefox-style RTL (scrollLeft is 0 or negative)
         if (scrollLeft <= 0) { 
             atStart = Math.abs(scrollLeft) < scrollEndTolerance;
             atEnd = Math.abs(scrollLeft) >= maxScroll - scrollEndTolerance;
-        } else { // Chrome-style RTL (scrollLeft is positive and decreases from max to 0)
+        } else {
             atStart = scrollLeft >= maxScroll - scrollEndTolerance;
             atEnd = scrollLeft < scrollEndTolerance;
         }
-    } else { // LTR
+    } else {
         atStart = scrollLeft < scrollEndTolerance;
         atEnd = scrollLeft >= maxScroll - scrollEndTolerance;
     }
     
-    // The 'left' button corresponds to "Previous", and 'right' to "Next".
-    // Disable "Previous" when at the start.
-    // Disable "Next" when at the end.
     setCanScroll({
         left: !atStart,
         right: !atEnd,
     });
   }, [content.furniture.items]);
+  
+  const handleStoreScrollCheck = useCallback(() => {
+    const container = storeScrollRef.current;
+    if (!container) return;
+
+    const { scrollLeft, scrollWidth, clientWidth } = container;
+    const isRtl = getComputedStyle(container).direction === 'rtl';
+    const scrollEndTolerance = 5;
+
+    let atStart: boolean;
+    let atEnd: boolean;
+    
+    const maxScroll = scrollWidth - clientWidth;
+
+    if (maxScroll < scrollEndTolerance) {
+        atStart = true;
+        atEnd = true;
+    } else if (isRtl) {
+        if (scrollLeft <= 0) { 
+            atStart = Math.abs(scrollLeft) < scrollEndTolerance;
+            atEnd = Math.abs(scrollLeft) >= maxScroll - scrollEndTolerance;
+        } else {
+            atStart = scrollLeft >= maxScroll - scrollEndTolerance;
+            atEnd = scrollLeft < scrollEndTolerance;
+        }
+    } else {
+        atStart = scrollLeft < scrollEndTolerance;
+        atEnd = scrollLeft >= maxScroll - scrollEndTolerance;
+    }
+    
+    setCanStoreScroll({
+        left: !atStart,
+        right: !atEnd,
+    });
+  }, [content.store.items]);
 
   useEffect(() => {
     const scroller = furnitureScrollRef.current;
     if (scroller) {
-        // A small delay to ensure the DOM is fully painted and scroll properties are accurate.
         const timer = setTimeout(handleScrollCheck, 100);
         
         scroller.addEventListener('scroll', handleScrollCheck, { passive: true });
@@ -438,6 +482,22 @@ const PublicSite: React.FC = () => {
         };
     }
   }, [handleScrollCheck, content.furniture.items]);
+  
+  useEffect(() => {
+    const scroller = storeScrollRef.current;
+    if (scroller) {
+        const timer = setTimeout(handleStoreScrollCheck, 100);
+        
+        scroller.addEventListener('scroll', handleStoreScrollCheck, { passive: true });
+        window.addEventListener('resize', handleStoreScrollCheck);
+
+        return () => {
+            clearTimeout(timer);
+            scroller.removeEventListener('scroll', handleStoreScrollCheck);
+            window.removeEventListener('resize', handleStoreScrollCheck);
+        };
+    }
+  }, [handleStoreScrollCheck, content.store.items]);
 
 
   useEffect(() => {
@@ -642,28 +702,50 @@ const PublicSite: React.FC = () => {
                     <EditableText as="h2" isAdmin={false} value={content.store.title} onChange={()=>{}} className="text-4xl lg:text-5xl font-bold text-amber-400"/>
                     <EditableText as="p" isAdmin={false} value={content.store.subtitle} onChange={()=>{}} className="text-lg text-gray-400 mt-2"/>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {content.store.items.map((item, index) => (
-                        <div 
-                            key={item.id}
-                            className="group bg-[#1a1a1a] rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-amber-500/20 hover:-translate-y-2 animate-on-scroll animate-fade-up"
-                            style={{transitionDelay: `${index * 100}ms`}}
-                        >
-                           <EditableImage isAdmin={false} src={item.imageUrl} alt={item.name} onChange={()=>{}} className="w-full h-72 object-cover"/>
-                           <div className="p-6 text-right">
-                               <EditableText as="h3" isAdmin={false} value={item.name} onChange={()=>{}} className="text-xl font-bold text-white mb-2"/>
-                               <EditableText as="p" isAdmin={false} value={item.price} onChange={()=>{}} className="text-lg font-semibold text-amber-400 mb-4"/>
-                               <a 
-                                    href={item.productUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-block w-full text-center bg-amber-500 text-black font-bold py-2 px-6 rounded-md hover:bg-amber-400 transition-all duration-300"
-                                >
-                                    عرض المنتج
-                               </a>
-                           </div>
-                        </div>
-                    ))}
+                <div className="relative max-w-7xl mx-auto animate-on-scroll animate-fade-up">
+                    <div 
+                        ref={storeScrollRef}
+                        className="flex items-stretch gap-8 pb-6 overflow-x-auto scroll-smooth snap-x snap-mandatory scrollbar-hide"
+                    >
+                        {content.store.items.map((item) => (
+                            <div 
+                                key={item.id}
+                                className="group flex-shrink-0 w-full sm:w-1/2 md:w-1/3 snap-start bg-[#1a1a1a] rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-amber-500/20 hover:-translate-y-2"
+                            >
+                               <EditableImage isAdmin={false} src={item.imageUrl} alt={item.name} onChange={()=>{}} className="w-full h-72 object-cover"/>
+                               <div className="p-6 text-right">
+                                   <EditableText as="h3" isAdmin={false} value={item.name} onChange={()=>{}} className="text-xl font-bold text-white mb-2"/>
+                                   <EditableText as="p" isAdmin={false} value={item.price} onChange={()=>{}} className="text-lg font-semibold text-amber-400 mb-4"/>
+                                   <a 
+                                        href={item.productUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-block w-full text-center bg-amber-500 text-black font-bold py-2 px-6 rounded-md hover:bg-amber-400 transition-all duration-300"
+                                    >
+                                        عرض المنتج
+                                   </a>
+                               </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <button 
+                        onClick={() => handleStoreScroll('left')}
+                        disabled={!canStoreScroll.left}
+                        className="absolute top-1/2 -translate-y-1/2 -left-4 z-10 bg-white/10 backdrop-blur-sm text-white rounded-full w-12 h-12 flex items-center justify-center hover:bg-amber-500/50 transition-all duration-300 transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-[#242424] disabled:opacity-30 disabled:cursor-not-allowed disabled:scale-100"
+                        aria-label="السابق"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
+                    </button>
+
+                    <button 
+                        onClick={() => handleStoreScroll('right')}
+                        disabled={!canStoreScroll.right}
+                        className="absolute top-1/2 -translate-y-1/2 -right-4 z-10 bg-white/10 backdrop-blur-sm text-white rounded-full w-12 h-12 flex items-center justify-center hover:bg-amber-500/50 transition-all duration-300 transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-[#242424] disabled:opacity-30 disabled:cursor-not-allowed disabled:scale-100"
+                        aria-label="التالي"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
                 </div>
             </div>
         </section>
