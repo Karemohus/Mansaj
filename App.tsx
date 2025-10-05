@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import type { SiteContent, Client, FurnitureItem, StoreProduct } from './types';
 import { EditableText, EditableImage } from './components/Editable';
-import { PhoneIcon, MailIcon, LocationIcon, WhatsAppIcon } from './components/icons';
+import { PhoneIcon, MailIcon, LocationIcon, WhatsAppIcon, MansajLogo } from './components/icons';
 import { initialContent } from './content';
 import { AdminPage } from './components/Admin';
 
@@ -586,7 +586,9 @@ const PublicSite: React.FC = () => {
 
       <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-[#1a1a1a] bg-opacity-80 backdrop-blur-sm shadow-lg' : 'bg-transparent'}`}>
         <nav className="container mx-auto px-6 py-4 flex justify-between items-center">
-          <a href="#hero" onClick={handleNavClick} className="text-3xl font-bold tracking-wider text-amber-400">منسج</a>
+          <a href="#hero" onClick={handleNavClick} aria-label="الصفحة الرئيسية لمنسج">
+            <MansajLogo className="h-8 text-white transition-transform duration-300 hover:scale-105" />
+          </a>
           <div className="flex items-center gap-8">
             <ul className="hidden md:flex items-center space-x-8 space-x-reverse">
               <li><a href="#about" onClick={handleNavClick} className={navLinkClasses('about')}>عن الشركة</a></li>
