@@ -83,7 +83,7 @@ const ClientModal: React.FC<{ client: Client, onClose: () => void }> = ({ client
             <div className="w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0 bg-white p-2 rounded-md flex items-center justify-center">
               <img src={client.logoUrl} alt={client.name} className="max-w-full max-h-full object-contain" />
             </div>
-            <div>
+            <div className="flex flex-col items-center sm:items-start">
               <h2 className="text-2xl sm:text-3xl font-bold text-amber-400 mb-2">{client.name}</h2>
               <p className="text-base text-gray-300 leading-relaxed mb-4">{client.description}</p>
               {client.websiteUrl && (
