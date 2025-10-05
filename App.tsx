@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import type { SiteContent, Client, FurnitureItem } from './types';
+import type { SiteContent, Client, FurnitureItem, StoreProduct } from './types';
 import { EditableText, EditableImage } from './components/Editable';
 import { PhoneIcon, MailIcon, LocationIcon, WhatsAppIcon } from './components/icons';
 import { initialContent } from './content';
@@ -116,28 +117,61 @@ const ClientModal: React.FC<{ client: Client, onClose: () => void }> = ({ client
   );
 };
 
-const FurnitureModal: React.FC<{ item: FurnitureItem, onClose: () => void }> = ({ item, onClose }) => {
+const FurnitureModal: React.FC<{ items: FurnitureItem[], initialItem: FurnitureItem, onClose: () => void }> = ({ items, initialItem, onClose }) => {
   const modalRef = React.useRef<HTMLDivElement>(null);
+  const initialIndex = React.useMemo(() => items.findIndex(i => i.id === initialItem.id), [items, initialItem]);
+  const [currentIndex, setCurrentIndex] = useState(initialIndex >= 0 ? initialIndex : 0);
+  const [imageLoading, setImageLoading] = useState(true);
+  const activeThumbnailRef = React.useRef<HTMLButtonElement>(null);
+  
+  const currentItem = items[currentIndex];
+
+  const goToNext = useCallback(() => {
+    setImageLoading(true);
+    setCurrentIndex(prevIndex => (prevIndex + 1) % items.length);
+  }, [items.length]);
+
+  const goToPrev = useCallback(() => {
+    setImageLoading(true);
+    setCurrentIndex(prevIndex => (prevIndex - 1 + items.length) % items.length);
+  }, [items.length]);
+  
+  const goToIndex = (index: number) => {
+    if (index === currentIndex) return;
+    setImageLoading(true);
+    setCurrentIndex(index);
+  }
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'ArrowRight') goToNext();
+      if (e.key === 'ArrowLeft') goToPrev();
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => {
       document.body.style.overflow = 'auto';
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [onClose]);
+  }, [onClose, goToNext, goToPrev]);
 
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
       onClose();
     }
   };
+
+  useEffect(() => {
+    if (activeThumbnailRef.current) {
+      activeThumbnailRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center'
+      });
+    }
+  }, [currentIndex]);
+
 
   return (
     <div 
@@ -148,21 +182,67 @@ const FurnitureModal: React.FC<{ item: FurnitureItem, onClose: () => void }> = (
     >
       <div 
         ref={modalRef}
-        className="relative bg-transparent text-white rounded-lg shadow-2xl max-w-4xl w-full mx-auto transform animate-zoom-in"
+        className="relative text-white w-full max-w-4xl mx-auto flex flex-col gap-4 transform animate-zoom-in"
       >
         <button 
           onClick={onClose} 
-          className="absolute -top-10 right-0 text-gray-300 hover:text-white transition-colors z-10 bg-black/30 rounded-full p-1"
+          className="absolute -top-10 right-0 text-gray-300 hover:text-white transition-colors z-20 bg-black/30 rounded-full p-1"
           aria-label="إغلاق"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
-        <figure>
-            <img src={item.imageUrl.replace('w=800', 'w=1200')} alt={item.name} className="w-full h-auto max-h-[80vh] object-contain rounded-lg" />
-            <figcaption className="text-center mt-4 text-xl font-semibold">{item.name}</figcaption>
-        </figure>
+
+        <div className="relative flex-grow flex items-center justify-center">
+            <div className={`w-full h-auto max-h-[70vh] flex items-center justify-center transition-opacity duration-300 ${imageLoading ? 'opacity-50' : 'opacity-100'}`}>
+                <img 
+                    key={currentItem.id}
+                    src={currentItem.imageUrl.replace('w=800', 'w=1200')} 
+                    alt={currentItem.name} 
+                    className="w-full h-auto max-h-[70vh] object-contain rounded-lg"
+                    onLoad={() => setImageLoading(false)}
+                />
+            </div>
+
+            <button 
+                onClick={goToPrev}
+                className="absolute left-0 sm:-left-4 z-10 bg-white/10 backdrop-blur-sm text-white rounded-full w-12 h-12 flex items-center justify-center hover:bg-amber-500/50 transition-all duration-300 transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-black"
+                aria-label="السابق"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+            </button>
+            <button 
+                onClick={goToNext}
+                className="absolute right-0 sm:-right-4 z-10 bg-white/10 backdrop-blur-sm text-white rounded-full w-12 h-12 flex items-center justify-center hover:bg-amber-500/50 transition-all duration-300 transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-black"
+                aria-label="التالي"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+            </button>
+        </div>
+
+        <div className="flex-shrink-0 text-center">
+            <p className="text-xl font-semibold mb-4">{currentItem.name}</p>
+            <div className="flex justify-center pb-2">
+                <div className="flex gap-3 overflow-x-auto scrollbar-hide py-2 px-4 max-w-full">
+                    {items.map((item, index) => (
+                        <button
+                            key={item.id}
+                            ref={index === currentIndex ? activeThumbnailRef : null}
+                            onClick={() => goToIndex(index)}
+                            className={`flex-shrink-0 w-20 h-20 rounded-md overflow-hidden transition-all duration-300 focus:outline-none ring-offset-2 ring-offset-black ${currentIndex === index ? 'ring-2 ring-amber-400 scale-105' : 'opacity-60 hover:opacity-100'}`}
+                            aria-label={`عرض ${item.name}`}
+                        >
+                            <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                        </button>
+                    ))}
+                </div>
+            </div>
+        </div>
       </div>
     </div>
   );
@@ -226,6 +306,42 @@ const SeoStructuredData: React.FC<{ content: SiteContent }> = ({ content }) => {
         productScript.innerHTML = JSON.stringify(productSchema);
         document.head.appendChild(productScript);
         scripts.push(productScript);
+    }
+    
+    // Store Products Schema
+    if (content.store.items.length > 0) {
+        const storeProductSchema = {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": "منتجات من متجر منسج",
+        "description": "منتجات مختارة من متجر منسج متاحة للشراء.",
+        "itemListElement": content.store.items.map((item, index) => ({
+            "@type": "ListItem",
+            "position": index + 1,
+            "item": {
+              "@type": "Product",
+              "name": item.name,
+              "image": item.imageUrl,
+              "description": `منتج ${item.name} متوفر في متجر منسج.`,
+              "brand": {
+                  "@type": "Brand",
+                  "name": "منسج للأثاث"
+              },
+              "offers": {
+                "@type": "Offer",
+                "priceCurrency": "SAR",
+                "price": item.price.replace(/[^0-9.]/g, ''),
+                "url": item.productUrl,
+                "availability": "https://schema.org/InStock"
+              }
+            }
+        }))
+        };
+        const storeProductScript = document.createElement('script');
+        storeProductScript.type = 'application/ld+json';
+        storeProductScript.innerHTML = JSON.stringify(storeProductSchema);
+        document.head.appendChild(storeProductScript);
+        scripts.push(storeProductScript);
     }
 
     return () => {
@@ -414,7 +530,8 @@ const PublicSite: React.FC = () => {
           <div className="flex items-center gap-8">
             <ul className="hidden md:flex items-center space-x-8 space-x-reverse">
               <li><a href="#about" onClick={handleNavClick} className={navLinkClasses('about')}>عن الشركة</a></li>
-              <li><a href="#furniture" onClick={handleNavClick} className={navLinkClasses('furniture')}>منتجاتنا</a></li>
+              <li><a href="#furniture" onClick={handleNavClick} className={navLinkClasses('furniture')}>إبداعاتنا</a></li>
+              <li><a href="#store" onClick={handleNavClick} className={navLinkClasses('store')}>من متجرنا</a></li>
               <li><a href="#clients" onClick={handleNavClick} className={navLinkClasses('clients')}>شركاؤنا</a></li>
               <li><a href="#contact" onClick={handleNavClick} className={navLinkClasses('contact')}>تواصل معنا</a></li>
             </ul>
@@ -519,7 +636,39 @@ const PublicSite: React.FC = () => {
             </div>
         </section>
         
-        <section id="clients" className="py-24 bg-[#242424]">
+        <section id="store" className="py-24 bg-[#242424] overflow-hidden">
+            <div className="container mx-auto px-6">
+                <div className="text-center mb-16 animate-on-scroll animate-fade-up">
+                    <EditableText as="h2" isAdmin={false} value={content.store.title} onChange={()=>{}} className="text-4xl lg:text-5xl font-bold text-amber-400"/>
+                    <EditableText as="p" isAdmin={false} value={content.store.subtitle} onChange={()=>{}} className="text-lg text-gray-400 mt-2"/>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {content.store.items.map((item, index) => (
+                        <div 
+                            key={item.id}
+                            className="group bg-[#1a1a1a] rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-amber-500/20 hover:-translate-y-2 animate-on-scroll animate-fade-up"
+                            style={{transitionDelay: `${index * 100}ms`}}
+                        >
+                           <EditableImage isAdmin={false} src={item.imageUrl} alt={item.name} onChange={()=>{}} className="w-full h-72 object-cover"/>
+                           <div className="p-6 text-right">
+                               <EditableText as="h3" isAdmin={false} value={item.name} onChange={()=>{}} className="text-xl font-bold text-white mb-2"/>
+                               <EditableText as="p" isAdmin={false} value={item.price} onChange={()=>{}} className="text-lg font-semibold text-amber-400 mb-4"/>
+                               <a 
+                                    href={item.productUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-block w-full text-center bg-amber-500 text-black font-bold py-2 px-6 rounded-md hover:bg-amber-400 transition-all duration-300"
+                                >
+                                    عرض المنتج
+                               </a>
+                           </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </section>
+
+        <section id="clients" className="py-24 bg-[#1a1a1a]">
             <div className="container mx-auto px-6 animate-on-scroll animate-fade-up">
                 <div className="text-center">
                     <EditableText as="h2" isAdmin={false} value={content.clients.title} onChange={()=>{}} className="text-4xl lg:text-5xl font-bold mb-4 text-amber-400"/>
@@ -537,7 +686,7 @@ const PublicSite: React.FC = () => {
                                  tabIndex={0}
                                  onClick={() => setSelectedClient(client)}
                                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedClient(client); }}}
-                                 className="relative group cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-4 focus-visible:ring-offset-[#242424] rounded-md" 
+                                 className="relative group cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-4 focus-visible:ring-offset-[#1a1a1a] rounded-md" 
                                  aria-label={`عرض تفاصيل ${client.name}`}
                              >
                                 <img src={client.logoUrl} alt={client.name} className="h-12 md:h-16 object-contain transition-all duration-300 filter grayscale group-hover:grayscale-0 group-hover:scale-110" />
@@ -548,14 +697,14 @@ const PublicSite: React.FC = () => {
             </div>
         </section>
 
-        <section id="contact" className="py-24 bg-[#1a1a1a]">
+        <section id="contact" className="py-24 bg-[#242424]">
             <div className="container mx-auto px-6 text-center">
                 <div className="animate-on-scroll animate-fade-up">
                     <h2 className="text-4xl lg:text-5xl font-bold mb-12 text-amber-400">تواصل معنا</h2>
                 </div>
                 <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
                     <div 
-                        className="group flex flex-col items-center p-8 bg-[#242424] rounded-lg transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/10 hover:-translate-y-2 animate-on-scroll animate-fade-up" 
+                        className="group flex flex-col items-center p-8 bg-[#1a1a1a] rounded-lg transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/10 hover:-translate-y-2 animate-on-scroll animate-fade-up" 
                         style={{transitionDelay: `100ms`}}
                     >
                         <PhoneIcon className="w-12 h-12 text-amber-400 mb-4 transition-transform duration-300 group-hover:scale-110"/>
@@ -575,12 +724,12 @@ const PublicSite: React.FC = () => {
                             </a>
                         </div>
                     </div>
-                    <a href={`mailto:${content.contact.email}`} className="group flex flex-col items-center p-8 bg-[#242424] rounded-lg transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/10 hover:-translate-y-2 animate-on-scroll animate-fade-up" style={{transitionDelay: `200ms`}}>
+                    <a href={`mailto:${content.contact.email}`} className="group flex flex-col items-center p-8 bg-[#1a1a1a] rounded-lg transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/10 hover:-translate-y-2 animate-on-scroll animate-fade-up" style={{transitionDelay: `200ms`}}>
                         <MailIcon className="w-12 h-12 text-amber-400 mb-4 transition-transform duration-300 group-hover:scale-110"/>
                         <h3 className="text-xl font-semibold mb-2">البريد الإلكتروني</h3>
                         <EditableText as="p" isAdmin={false} value={content.contact.email} onChange={()=>{}} className="text-gray-300"/>
                     </a>
-                    <div className="group flex flex-col items-center p-8 bg-[#242424] rounded-lg transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/10 hover:-translate-y-2 animate-on-scroll animate-fade-up" style={{transitionDelay: `300ms`}}>
+                    <div className="group flex flex-col items-center p-8 bg-[#1a1a1a] rounded-lg transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/10 hover:-translate-y-2 animate-on-scroll animate-fade-up" style={{transitionDelay: `300ms`}}>
                         <LocationIcon className="w-12 h-12 text-amber-400 mb-4 transition-transform duration-300 group-hover:scale-110"/>
                         <h3 className="text-xl font-semibold mb-2">العنوان</h3>
                         <a 
@@ -614,7 +763,7 @@ const PublicSite: React.FC = () => {
       </a>
 
       {selectedClient && <ClientModal client={selectedClient} onClose={() => setSelectedClient(null)} />}
-      {selectedFurniture && <FurnitureModal item={selectedFurniture} onClose={() => setSelectedFurniture(null)} />}
+      {selectedFurniture && <FurnitureModal items={content.furniture.items} initialItem={selectedFurniture} onClose={() => setSelectedFurniture(null)} />}
     </div>
   );
 };

@@ -13,6 +13,14 @@ export interface Client {
   websiteUrl: string;
 }
 
+export interface StoreProduct {
+  id: number;
+  name: string;
+  imageUrl: string;
+  price: string;
+  productUrl: string;
+}
+
 export interface SiteContent {
   hero: {
     title: string;
@@ -27,6 +35,11 @@ export interface SiteContent {
   furniture: {
     title: string;
     items: FurnitureItem[];
+  };
+  store: {
+    title: string;
+    subtitle: string;
+    items: StoreProduct[];
   };
   clients: {
     title: string;

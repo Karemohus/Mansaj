@@ -1,3 +1,4 @@
+
 import type { SiteContent } from './types';
 
 export const initialContent: SiteContent = {
@@ -16,9 +17,18 @@ export const initialContent: SiteContent = {
     items: [
       { id: 1, name: "أثاث منزلي", imageUrl: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?q=80&w=800&auto=format&fit=crop" },
       { id: 2, name: "أثاث مكتبي", imageUrl: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=800&auto=format&fit=crop" },
-      { id: 3, name: "تصميم مخصص", imageUrl: "https://images.unsplash.com/photo-1519947486511-46149fa0a254?q=80&w=800&auto=format&fit=crop" },
+      { id: 3, name: "تصميم مخصص", imageUrl: "https://images.unsplash.com/photo-1572377323861-c46372d892a0?q=80&w=800&auto=format&fit=crop" },
       { id: 4, name: "مشاريع فندقية", imageUrl: "https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=800&auto=format&fit=crop" },
     ],
+  },
+  store: {
+    title: "من متجرنا",
+    subtitle: "منتجات مختارة بعناية يمكنك شراؤها الآن",
+    items: [
+      { id: 1, name: "كرسي خشبي أنيق", imageUrl: "https://images.unsplash.com/photo-1592078615290-033ee584e267?q=80&w=800&auto=format&fit=crop", price: "750 ر.س", productUrl: "https://example.com/store/product1" },
+      { id: 2, name: "طاولة قهوة عصرية", imageUrl: "https://images.unsplash.com/photo-1611269154421-4e27233ac5c7?q=80&w=800&auto=format&fit=crop", price: "1,200 ر.س", productUrl: "https://example.com/store/product2" },
+      { id: 3, name: "وحدة إضاءة سقفية", imageUrl: "https://images.unsplash.com/photo-1540932239986-30128078f3c5?q=80&w=800&auto=format&fit=crop", price: "450 ر.س", productUrl: "https://example.com/store/product3" },
+    ]
   },
   clients: {
     title: "شركاء النجاح",

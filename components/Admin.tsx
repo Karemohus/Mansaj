@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import type { SiteContent } from '../types';
 import { initialContent, deepCopy } from '../content';
@@ -81,6 +82,14 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
             const list = (newContent[section] as any)[listName];
             if(section === 'furniture'){
                 list.push({ id: Date.now(), name: "منتج جديد", imageUrl: "https://source.unsplash.com/800x800/?furniture&" + Date.now() });
+            } else if (section === 'store') {
+                list.push({ 
+                    id: Date.now(), 
+                    name: "منتج متجر جديد", 
+                    imageUrl: "https://source.unsplash.com/800x800/?product&" + Date.now(),
+                    price: "0 ر.س",
+                    productUrl: "https://example.com/store/new-product"
+                });
             } else if (section === 'clients') {
                 list.push({ 
                     id: Date.now(), 
@@ -129,7 +138,7 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
                     </AdminSection>
 
                     {/* Furniture Section */}
-                    <AdminSection title="المنتجات">
+                    <AdminSection title="إبداعاتنا (المنتجات)">
                         <InputField label="عنوان القسم" value={content.furniture.title} onChange={e => handleFieldChange('furniture', 'title', e.target.value)} />
                         <div className="space-y-4 mt-4">
                             {content.furniture.items.map((item, index) => (
@@ -142,6 +151,27 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
                         </div>
                         <button onClick={() => handleAddItem('furniture', 'items')} className="mt-4 w-full text-sm bg-green-600 px-3 py-2 rounded hover:bg-green-700">إضافة منتج</button>
                     </AdminSection>
+
+                    {/* Store Section */}
+                    <AdminSection title="منتجات المتجر">
+                        <InputField label="عنوان القسم" value={content.store.title} onChange={e => handleFieldChange('store', 'title', e.target.value)} />
+                        <InputField label="العنوان الفرعي للقسم" value={content.store.subtitle} onChange={e => handleFieldChange('store', 'subtitle', e.target.value)} />
+                         <div className="space-y-4 mt-4">
+                            {content.store.items.map((item, index) => (
+                                <div key={item.id} className="p-4 bg-gray-800 rounded space-y-3">
+                                    <div className="flex items-center gap-2">
+                                      <input type="text" value={item.name} onChange={e => handleListItemChange('store', 'items', index, 'name', e.target.value)} className="flex-grow bg-gray-700 p-1 rounded border-transparent focus:ring-amber-500 focus:border-amber-500" placeholder="اسم المنتج"/>
+                                      <button onClick={() => handleRemoveItem('store', 'items', item.id)} className="text-red-500 text-xs px-2 hover:text-red-400">حذف</button>
+                                    </div>
+                                    <input type="text" value={item.imageUrl} onChange={e => handleListItemChange('store', 'items', index, 'imageUrl', e.target.value)} className="w-full bg-gray-700 p-1 rounded border-transparent focus:ring-amber-500 focus:border-amber-500" placeholder="رابط الصورة"/>
+                                    <input type="text" value={item.price} onChange={e => handleListItemChange('store', 'items', index, 'price', e.target.value)} className="w-full bg-gray-700 p-1 rounded border-transparent focus:ring-amber-500 focus:border-amber-500" placeholder="السعر"/>
+                                    <input type="text" value={item.productUrl} onChange={e => handleListItemChange('store', 'items', index, 'productUrl', e.target.value)} className="w-full bg-gray-700 p-1 rounded border-transparent focus:ring-amber-500 focus:border-amber-500" placeholder="رابط المنتج في المتجر"/>
+                                </div>
+                            ))}
+                        </div>
+                        <button onClick={() => handleAddItem('store', 'items')} className="mt-4 w-full text-sm bg-green-600 px-3 py-2 rounded hover:bg-green-700">إضافة منتج متجر</button>
+                    </AdminSection>
+
 
                     {/* Clients Section */}
                     <AdminSection title="شركاء النجاح">
