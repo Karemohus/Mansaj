@@ -360,6 +360,7 @@ const PublicSite: React.FC = () => {
   const [scrollProgress, setScrollProgress] = useState(0);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [selectedFurniture, setSelectedFurniture] = useState<FurnitureItem | null>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   
   const containerRef = useIntersectionObserver({ threshold: 0.1 });
   
@@ -499,6 +500,26 @@ const PublicSite: React.FC = () => {
     }
   }, [handleStoreScrollCheck, content.store.items]);
 
+   // Mobile viewport height fix
+    useEffect(() => {
+        const setVh = () => {
+            const vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        };
+        setVh();
+        window.addEventListener('resize', setVh);
+        return () => window.removeEventListener('resize', setVh);
+    }, []);
+
+    // Body scroll lock for mobile menu
+    useEffect(() => {
+        if (isMenuOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'auto';
+        }
+        return () => { document.body.style.overflow = 'auto'; };
+    }, [isMenuOpen]);
 
   useEffect(() => {
     try {
@@ -555,6 +576,7 @@ const PublicSite: React.FC = () => {
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
+    setIsMenuOpen(false);
     const targetId = e.currentTarget.getAttribute('href')?.slice(1);
     if (targetId) {
       document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -567,7 +589,6 @@ const PublicSite: React.FC = () => {
       <style>{`
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-
         @keyframes pop-up {
           from { opacity: 0; transform: translateY(10px) scale(0.95); }
           to { opacity: 1; transform: translateY(0) scale(1); }
@@ -575,6 +596,13 @@ const PublicSite: React.FC = () => {
         .animate-pop-up { 
           animation: pop-up 0.2s ease-out forwards; 
           transform-origin: bottom center;
+        }
+        @keyframes slide-down-fade {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-down-fade {
+            animation: slide-down-fade 0.3s ease-out forwards;
         }
       `}</style>
       <div className="fixed top-0 left-0 right-0 h-1.5 bg-gray-800 z-[60]">
@@ -587,20 +615,52 @@ const PublicSite: React.FC = () => {
       <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-[#1a1a1a] bg-opacity-80 backdrop-blur-sm shadow-lg' : 'bg-transparent'}`}>
         <nav className="container mx-auto px-6 py-4 flex justify-between items-center">
           <a href="#hero" onClick={handleNavClick} className="text-3xl font-bold tracking-wider text-amber-400">منسج</a>
-          <div className="flex items-center gap-8">
-            <ul className="hidden md:flex items-center space-x-8 space-x-reverse">
-              <li><a href="#about" onClick={handleNavClick} className={navLinkClasses('about')}>عن الشركة</a></li>
-              <li><a href="#furniture" onClick={handleNavClick} className={navLinkClasses('furniture')}>إبداعاتنا</a></li>
-              <li><a href="#store" onClick={handleNavClick} className={navLinkClasses('store')}>من متجرنا</a></li>
-              <li><a href="#clients" onClick={handleNavClick} className={navLinkClasses('clients')}>شركاؤنا</a></li>
-              <li><a href="#contact" onClick={handleNavClick} className={navLinkClasses('contact')}>تواصل معنا</a></li>
-            </ul>
+          
+          <ul className="hidden md:flex items-center space-x-8 space-x-reverse">
+            <li><a href="#about" onClick={handleNavClick} className={navLinkClasses('about')}>عن الشركة</a></li>
+            <li><a href="#furniture" onClick={handleNavClick} className={navLinkClasses('furniture')}>إبداعاتنا</a></li>
+            <li><a href="#store" onClick={handleNavClick} className={navLinkClasses('store')}>من متجرنا</a></li>
+            <li><a href="#clients" onClick={handleNavClick} className={navLinkClasses('clients')}>شركاؤنا</a></li>
+            <li><a href="#contact" onClick={handleNavClick} className={navLinkClasses('contact')}>تواصل معنا</a></li>
+          </ul>
+
+          <div className="md:hidden">
+            <button onClick={() => setIsMenuOpen(true)} className="text-white hover:text-amber-400 transition-colors" aria-label="فتح القائمة">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
+                </svg>
+            </button>
           </div>
         </nav>
       </header>
 
+      {isMenuOpen && (
+        <div 
+            className="fixed inset-0 z-[99] bg-[#1a1a1a]/95 backdrop-blur-md flex flex-col items-center justify-center animate-slide-down-fade"
+            role="dialog"
+            aria-modal="true"
+        >
+            <button 
+                onClick={() => setIsMenuOpen(false)} 
+                className="absolute top-6 right-6 text-white hover:text-amber-400 transition-colors"
+                aria-label="إغلاق القائمة"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-9 w-9" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            <ul className="flex flex-col items-center gap-8 text-2xl font-semibold">
+                <li><a href="#about" onClick={handleNavClick} className={navLinkClasses('about')}>عن الشركة</a></li>
+                <li><a href="#furniture" onClick={handleNavClick} className={navLinkClasses('furniture')}>إبداعاتنا</a></li>
+                <li><a href="#store" onClick={handleNavClick} className={navLinkClasses('store')}>من متجرنا</a></li>
+                <li><a href="#clients" onClick={handleNavClick} className={navLinkClasses('clients')}>شركاؤنا</a></li>
+                <li><a href="#contact" onClick={handleNavClick} className={navLinkClasses('contact')}>تواصل معنا</a></li>
+            </ul>
+        </div>
+      )}
+
       <main>
-        <section id="hero" className="h-screen min-h-[600px] relative flex items-center justify-center text-center text-white">
+        <section id="hero" className="min-h-[600px] relative flex items-center justify-center text-center text-white" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
             <div className="absolute inset-0 z-0">
                 <EditableImage 
                     isAdmin={false} 
@@ -653,7 +713,7 @@ const PublicSite: React.FC = () => {
                 <div className="relative max-w-7xl mx-auto animate-on-scroll animate-fade-up">
                     <div 
                         ref={furnitureScrollRef}
-                        className="flex items-stretch gap-6 pb-6 overflow-x-auto scroll-smooth snap-x snap-mandatory scrollbar-hide"
+                        className="flex items-stretch gap-6 pb-6 overflow-x-auto scroll-smooth snap-x snap-mandatory scrollbar-hide scroll-touch"
                     >
                         {content.furniture.items.map((item) => (
                             <button 
@@ -705,7 +765,7 @@ const PublicSite: React.FC = () => {
                 <div className="relative max-w-7xl mx-auto animate-on-scroll animate-fade-up">
                     <div 
                         ref={storeScrollRef}
-                        className="flex items-stretch gap-8 pb-6 overflow-x-auto scroll-smooth snap-x snap-mandatory scrollbar-hide"
+                        className="flex items-stretch gap-8 pb-6 overflow-x-auto scroll-smooth snap-x snap-mandatory scrollbar-hide scroll-touch"
                     >
                         {content.store.items.map((item) => (
                             <div 
