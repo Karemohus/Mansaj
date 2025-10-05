@@ -17,7 +17,7 @@ export const initialContent: SiteContent = {
     items: [
       { id: 1, name: "أثاث منزلي", imageUrl: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?q=80&w=800&auto=format&fit=crop" },
       { id: 2, name: "أثاث مكتبي", imageUrl: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=800&auto=format&fit=crop" },
-      { id: 3, name: "تصميم مخصص", imageUrl: "https://images.unsplash.com/photo-1624720114704-351d5d3a5043?q=80&w=800&auto=format&fit=crop" },
+      { id: 3, name: "تصميم مخصص", imageUrl: "https://images.unsplash.com/photo-1572377323861-c46372d892a0?q=80&w=800&auto=format&fit=crop" },
       { id: 4, name: "مشاريع فندقية", imageUrl: "https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=800&auto=format&fit=crop" },
     ],
   },
