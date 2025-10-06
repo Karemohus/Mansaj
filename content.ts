@@ -87,7 +87,7 @@ export const initialContent: SiteContent = {
     ],
   },
   contact: {
-    phone: "+966567930000",
+    phone: "+201040220121",
     email: "info@mansaj.sa",
     address: "الأحساء، المملكة العربية السعودية",
   },
