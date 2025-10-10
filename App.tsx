@@ -1,11 +1,11 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import type { SiteContent, Client, FurnitureItem, StoreProduct } from './types';
-import { EditableText, EditableImage } from './components/Editable';
 import { PhoneIcon, MailIcon, LocationIcon, WhatsAppIcon, MansajLogo } from './components/icons';
 import { initialContent } from './content';
 import { AdminPage } from './components/Admin';
 
+// Add Swiper to the global scope for TypeScript
+declare var Swiper: any;
 
 const useIntersectionObserver = (options: IntersectionObserverInit) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -352,6 +352,19 @@ const SeoStructuredData: React.FC<{ content: SiteContent }> = ({ content }) => {
   return null; // This component does not render anything to the DOM
 };
 
+const generateSrcSet = (url: string) => {
+  if (!url || !url.includes('unsplash.com')) return { src: url };
+  const baseUrl = url.split('?')[0];
+  const params = new URLSearchParams(url.split('?')[1]);
+  const width = params.get('w') || '1200';
+
+  return {
+    src: `${baseUrl}?q=80&w=${width}&auto=format&fit=crop`,
+    srcSet: [400, 800, 1200, 1920]
+      .map(w => `${baseUrl}?q=80&w=${w}&auto=format&fit=crop ${w}w`)
+      .join(', '),
+  };
+};
 
 const PublicSite: React.FC = () => {
   const [content, setContent] = useState<SiteContent>(initialContent);
@@ -362,143 +375,6 @@ const PublicSite: React.FC = () => {
   const [selectedFurniture, setSelectedFurniture] = useState<FurnitureItem | null>(null);
   
   const containerRef = useIntersectionObserver({ threshold: 0.1 });
-  
-  // States and refs for carousels
-  const furnitureScrollRef = useRef<HTMLDivElement>(null);
-  const storeScrollRef = useRef<HTMLDivElement>(null);
-  const [canScroll, setCanScroll] = useState({ left: false, right: true });
-  const [canStoreScroll, setCanStoreScroll] = useState({ left: false, right: true });
-
-  const handleFurnitureScroll = (direction: 'left' | 'right') => {
-    const container = furnitureScrollRef.current;
-    if (container && container.children.length > 1) {
-        const firstItem = container.children[0] as HTMLElement;
-        const secondItem = container.children[1] as HTMLElement;
-        const scrollAmount = secondItem.offsetLeft - firstItem.offsetLeft;
-
-        container.scrollBy({
-            left: direction === 'right' ? scrollAmount : -scrollAmount,
-            behavior: 'smooth',
-        });
-    }
-  };
-  
-  const handleStoreScroll = (direction: 'left' | 'right') => {
-    const container = storeScrollRef.current;
-    if (container && container.children.length > 1) {
-        const firstItem = container.children[0] as HTMLElement;
-        const secondItem = container.children[1] as HTMLElement;
-        const scrollAmount = secondItem.offsetLeft - firstItem.offsetLeft;
-        container.scrollBy({
-            left: direction === 'right' ? scrollAmount : -scrollAmount,
-            behavior: 'smooth',
-        });
-    }
-  };
-
-
-  const handleScrollCheck = useCallback(() => {
-    const container = furnitureScrollRef.current;
-    if (!container) return;
-
-    const { scrollLeft, scrollWidth, clientWidth } = container;
-    const isRtl = getComputedStyle(container).direction === 'rtl';
-    const scrollEndTolerance = 5;
-
-    let atStart: boolean;
-    let atEnd: boolean;
-    
-    const maxScroll = scrollWidth - clientWidth;
-
-    if (maxScroll < scrollEndTolerance) {
-        atStart = true;
-        atEnd = true;
-    } else if (isRtl) {
-        if (scrollLeft <= 0) { 
-            atStart = Math.abs(scrollLeft) < scrollEndTolerance;
-            atEnd = Math.abs(scrollLeft) >= maxScroll - scrollEndTolerance;
-        } else {
-            atStart = scrollLeft >= maxScroll - scrollEndTolerance;
-            atEnd = scrollLeft < scrollEndTolerance;
-        }
-    } else {
-        atStart = scrollLeft < scrollEndTolerance;
-        atEnd = scrollLeft >= maxScroll - scrollEndTolerance;
-    }
-    
-    setCanScroll({
-        left: !atStart,
-        right: !atEnd,
-    });
-  }, [content.furniture.items]);
-  
-  const handleStoreScrollCheck = useCallback(() => {
-    const container = storeScrollRef.current;
-    if (!container) return;
-
-    const { scrollLeft, scrollWidth, clientWidth } = container;
-    const isRtl = getComputedStyle(container).direction === 'rtl';
-    const scrollEndTolerance = 5;
-
-    let atStart: boolean;
-    let atEnd: boolean;
-    
-    const maxScroll = scrollWidth - clientWidth;
-
-    if (maxScroll < scrollEndTolerance) {
-        atStart = true;
-        atEnd = true;
-    } else if (isRtl) {
-        if (scrollLeft <= 0) { 
-            atStart = Math.abs(scrollLeft) < scrollEndTolerance;
-            atEnd = Math.abs(scrollLeft) >= maxScroll - scrollEndTolerance;
-        } else {
-            atStart = scrollLeft >= maxScroll - scrollEndTolerance;
-            atEnd = scrollLeft < scrollEndTolerance;
-        }
-    } else {
-        atStart = scrollLeft < scrollEndTolerance;
-        atEnd = scrollLeft >= maxScroll - scrollEndTolerance;
-    }
-    
-    setCanStoreScroll({
-        left: !atStart,
-        right: !atEnd,
-    });
-  }, [content.store.items]);
-
-  useEffect(() => {
-    const scroller = furnitureScrollRef.current;
-    if (scroller) {
-        const timer = setTimeout(handleScrollCheck, 100);
-        
-        scroller.addEventListener('scroll', handleScrollCheck, { passive: true });
-        window.addEventListener('resize', handleScrollCheck);
-
-        return () => {
-            clearTimeout(timer);
-            scroller.removeEventListener('scroll', handleScrollCheck);
-            window.removeEventListener('resize', handleScrollCheck);
-        };
-    }
-  }, [handleScrollCheck, content.furniture.items]);
-  
-  useEffect(() => {
-    const scroller = storeScrollRef.current;
-    if (scroller) {
-        const timer = setTimeout(handleStoreScrollCheck, 100);
-        
-        scroller.addEventListener('scroll', handleStoreScrollCheck, { passive: true });
-        window.addEventListener('resize', handleStoreScrollCheck);
-
-        return () => {
-            clearTimeout(timer);
-            scroller.removeEventListener('scroll', handleStoreScrollCheck);
-            window.removeEventListener('resize', handleStoreScrollCheck);
-        };
-    }
-  }, [handleStoreScrollCheck, content.store.items]);
-
 
   useEffect(() => {
     try {
@@ -549,6 +425,46 @@ const PublicSite: React.FC = () => {
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    if (!content.furniture.items.length) return;
+    const swiper = new Swiper('.furniture-swiper', {
+        loop: false,
+        slidesPerView: 1.2,
+        spaceBetween: 16,
+        rtl: true,
+        grabCursor: true,
+        navigation: {
+            nextEl: '.furniture-swiper-next',
+            prevEl: '.furniture-swiper-prev',
+        },
+        breakpoints: {
+            640: { slidesPerView: 2.5, spaceBetween: 24 },
+            1024: { slidesPerView: 3.5, spaceBetween: 24 },
+        },
+    });
+    return () => swiper.destroy();
+  }, [content.furniture.items]);
+
+  useEffect(() => {
+      if (!content.store.items.length) return;
+      const swiper = new Swiper('.store-swiper', {
+          loop: false,
+          slidesPerView: 1.1,
+          spaceBetween: 24,
+          rtl: true,
+          grabCursor: true,
+          navigation: {
+              nextEl: '.store-swiper-next',
+              prevEl: '.store-swiper-prev',
+          },
+          breakpoints: {
+              640: { slidesPerView: 2, spaceBetween: 32 },
+              1024: { slidesPerView: 3, spaceBetween: 32 },
+          },
+      });
+      return () => swiper.destroy();
+  }, [content.store.items]);
   
   const navLinkClasses = (sectionId: string) => 
     `relative transition-colors duration-300 ${activeSection === sectionId ? 'text-amber-400 font-bold' : 'hover:text-amber-400'} after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-0 after:h-0.5 after:bg-amber-400 after:transition-all after:duration-300 ${activeSection === sectionId ? 'after:w-full' : 'hover:after:w-full'}`;
@@ -567,15 +483,6 @@ const PublicSite: React.FC = () => {
       <style>{`
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-
-        @keyframes pop-up {
-          from { opacity: 0; transform: translateY(10px) scale(0.95); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        .animate-pop-up { 
-          animation: pop-up 0.2s ease-out forwards; 
-          transform-origin: bottom center;
-        }
       `}</style>
       <div className="fixed top-0 left-0 right-0 h-1.5 bg-gray-800 z-[60]">
         <div 
@@ -604,30 +511,22 @@ const PublicSite: React.FC = () => {
       <main>
         <section id="hero" className="h-screen min-h-[600px] relative flex items-center justify-center text-center text-white">
             <div className="absolute inset-0 z-0">
-                <EditableImage 
-                    isAdmin={false} 
-                    src={content.hero.backgroundImage} 
-                    alt="Hero background" 
-                    onChange={()=>{}} 
-                    className="w-full h-full"
+                <img 
+                    {...generateSrcSet(content.hero.backgroundImage)}
+                    sizes="100vw"
+                    alt="خلفية لغرفة معيشة أنيقة وفاخرة" 
+                    className="w-full h-full object-cover"
+                    loading="eager"
                 />
                 <div className="absolute inset-0 bg-black bg-opacity-60"></div>
             </div>
             <div className="relative z-10 p-6 animate-on-scroll animate-fade-up">
-                <EditableText 
-                    as="h1" 
-                    isAdmin={false} 
-                    value={content.hero.title} 
-                    onChange={()=>{}} 
-                    className="text-5xl md:text-7xl lg:text-8xl font-extrabold text-amber-400 mb-4"
-                />
-                <EditableText 
-                    as="p" 
-                    isAdmin={false} 
-                    value={content.hero.subtitle} 
-                    onChange={()=>{}} 
-                    className="text-lg md:text-xl max-w-2xl mx-auto text-gray-200 mb-8"
-                />
+                <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold text-amber-400 mb-4">
+                    {content.hero.title}
+                </h1>
+                <p className="text-lg md:text-xl max-w-2xl mx-auto text-gray-200 mb-8">
+                    {content.hero.subtitle}
+                </p>
                 <a href="#furniture" onClick={handleNavClick} className="bg-amber-500 text-black font-bold py-3 px-8 rounded-md hover:bg-amber-400 transition-all duration-300 transform hover:scale-105">
                     اكتشف إبداعاتنا
                 </a>
@@ -637,11 +536,13 @@ const PublicSite: React.FC = () => {
         <section id="about" className="py-24 bg-[#242424] overflow-hidden">
           <div className="container mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
             <div className="relative animate-on-scroll animate-fade-right">
-              <EditableImage isAdmin={false} src={content.about.imageUrl} alt="About Mansaj" onChange={()=>{}} className="rounded-lg shadow-2xl aspect-square object-cover"/>
+              <div className="rounded-lg shadow-2xl aspect-square overflow-hidden">
+                <img {...generateSrcSet(content.about.imageUrl)} sizes="(max-width: 768px) 100vw, 50vw" alt="صورة مقربة لأريكة عصرية" className="w-full h-full object-cover"/>
+              </div>
             </div>
             <div className="animate-on-scroll animate-fade-left">
-              <EditableText as="h2" isAdmin={false} value={content.about.title} onChange={()=>{}} className="text-4xl lg:text-5xl font-bold mb-6 text-amber-400"/>
-              <EditableText as="p" isAdmin={false} value={content.about.text} onChange={()=>{}} className="text-lg text-gray-300 leading-relaxed" textarea/>
+              <h2 className="text-4xl lg:text-5xl font-bold mb-6 text-amber-400">{content.about.title}</h2>
+              <p className="text-lg text-gray-300 leading-relaxed whitespace-pre-line">{content.about.text}</p>
             </div>
           </div>
         </section>
@@ -649,51 +550,30 @@ const PublicSite: React.FC = () => {
         <section id="furniture" className="py-24 bg-[#1a1a1a] overflow-hidden">
             <div className="container mx-auto px-6">
                 <div className="text-center mb-16 animate-on-scroll animate-fade-up">
-                    <EditableText as="h2" isAdmin={false} value={content.furniture.title} onChange={()=>{}} className="text-4xl lg:text-5xl font-bold text-amber-400"/>
+                    <h2 className="text-4xl lg:text-5xl font-bold text-amber-400">{content.furniture.title}</h2>
                 </div>
-                
                 <div className="relative max-w-7xl mx-auto animate-on-scroll animate-fade-up">
-                    <div 
-                        ref={furnitureScrollRef}
-                        className="flex items-stretch gap-6 pb-6 overflow-x-auto scroll-smooth snap-x snap-mandatory scrollbar-hide"
-                    >
-                        {content.furniture.items.map((item) => (
-                            <button 
-                                key={item.id}
-                                onClick={() => setSelectedFurniture(item)}
-                                className="group relative flex-shrink-0 w-3/4 sm:w-1/3 snap-start bg-[#242424] rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-amber-500/20 hover:-translate-y-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#1a1a1a]"
-                                aria-label={`عرض ${item.name}`}
-                            >
-                                <EditableImage isAdmin={false} src={item.imageUrl} alt={item.name} onChange={()=>{}} className="w-full h-64 object-cover"/>
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
-                                <div className="absolute bottom-0 left-0 right-0 p-4">
-                                    <EditableText as="h3" isAdmin={false} value={item.name} onChange={()=>{}} className="text-lg font-bold text-white text-right"/>
+                    <div className="swiper furniture-swiper overflow-visible">
+                        <div className="swiper-wrapper">
+                            {content.furniture.items.map((item) => (
+                                <div key={item.id} className="swiper-slide">
+                                    <button 
+                                        onClick={() => setSelectedFurniture(item)}
+                                        className="group relative w-full h-full bg-[#242424] rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-amber-500/20 hover:-translate-y-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#1a1a1a]"
+                                        aria-label={`عرض ${item.name}`}
+                                    >
+                                        <img {...generateSrcSet(item.imageUrl)} sizes="(max-width: 640px) 80vw, 30vw" alt={item.name} loading="lazy" className="w-full h-64 object-cover"/>
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+                                        <div className="absolute bottom-0 left-0 right-0 p-4">
+                                            <h3 className="text-lg font-bold text-white text-right">{item.name}</h3>
+                                        </div>
+                                    </button>
                                 </div>
-                            </button>
-                        ))}
+                            ))}
+                        </div>
                     </div>
-
-                    <button 
-                        onClick={() => handleFurnitureScroll('left')}
-                        disabled={!canScroll.left}
-                        className="absolute top-1/2 -translate-y-1/2 -left-4 z-10 bg-white/10 backdrop-blur-sm text-white rounded-full w-12 h-12 flex items-center justify-center hover:bg-amber-500/50 transition-all duration-300 transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-[#1a1a1a] disabled:opacity-30 disabled:cursor-not-allowed disabled:scale-100"
-                        aria-label="السابق"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                        </svg>
-                    </button>
-
-                    <button 
-                        onClick={() => handleFurnitureScroll('right')}
-                        disabled={!canScroll.right}
-                        className="absolute top-1/2 -translate-y-1/2 -right-4 z-10 bg-white/10 backdrop-blur-sm text-white rounded-full w-12 h-12 flex items-center justify-center hover:bg-amber-500/50 transition-all duration-300 transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-[#1a1a1a] disabled:opacity-30 disabled:cursor-not-allowed disabled:scale-100"
-                        aria-label="التالي"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                    </button>
+                    <button className="swiper-button-prev furniture-swiper-prev absolute top-1/2 -translate-y-1/2 -left-4 z-10 disabled:hidden" aria-label="السابق"></button>
+                    <button className="swiper-button-next furniture-swiper-next absolute top-1/2 -translate-y-1/2 -right-4 z-10 disabled:hidden" aria-label="التالي"></button>
                 </div>
             </div>
         </section>
@@ -701,53 +581,37 @@ const PublicSite: React.FC = () => {
         <section id="store" className="py-24 bg-[#242424] overflow-hidden">
             <div className="container mx-auto px-6">
                 <div className="text-center mb-16 animate-on-scroll animate-fade-up">
-                    <EditableText as="h2" isAdmin={false} value={content.store.title} onChange={()=>{}} className="text-4xl lg:text-5xl font-bold text-amber-400"/>
-                    <EditableText as="p" isAdmin={false} value={content.store.subtitle} onChange={()=>{}} className="text-lg text-gray-400 mt-2"/>
+                    <h2 className="text-4xl lg:text-5xl font-bold text-amber-400">{content.store.title}</h2>
+                    <p className="text-lg text-gray-400 mt-2">{content.store.subtitle}</p>
                 </div>
                 <div className="relative max-w-7xl mx-auto animate-on-scroll animate-fade-up">
-                    <div 
-                        ref={storeScrollRef}
-                        className="flex items-stretch gap-8 pb-6 overflow-x-auto scroll-smooth snap-x snap-mandatory scrollbar-hide"
-                    >
-                        {content.store.items.map((item) => (
-                            <div 
-                                key={item.id}
-                                className="group flex-shrink-0 w-full sm:w-1/2 md:w-1/3 snap-start bg-[#1a1a1a] rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-amber-500/20 hover:-translate-y-2"
-                            >
-                               <EditableImage isAdmin={false} src={item.imageUrl} alt={item.name} onChange={()=>{}} className="w-full h-72 object-cover"/>
-                               <div className="p-6 text-right">
-                                   <EditableText as="h3" isAdmin={false} value={item.name} onChange={()=>{}} className="text-xl font-bold text-white mb-2"/>
-                                   <EditableText as="p" isAdmin={false} value={item.price} onChange={()=>{}} className="text-lg font-semibold text-amber-400 mb-4"/>
-                                   <a 
-                                        href={item.productUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-block w-full text-center bg-amber-500 text-black font-bold py-2 px-6 rounded-md hover:bg-amber-400 transition-all duration-300"
-                                    >
-                                        عرض المنتج
-                                   </a>
-                               </div>
-                            </div>
-                        ))}
+                    <div className="swiper store-swiper overflow-visible">
+                        <div className="swiper-wrapper">
+                            {content.store.items.map((item) => (
+                                <div key={item.id} className="swiper-slide h-auto">
+                                    <div className="group w-full h-full flex flex-col bg-[#1a1a1a] rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-amber-500/20 hover:-translate-y-2">
+                                       <div className="w-full h-72 overflow-hidden">
+                                          <img {...generateSrcSet(item.imageUrl)} sizes="(max-width: 640px) 90vw, 30vw" alt={item.name} loading="lazy" className="w-full h-full object-cover"/>
+                                       </div>
+                                       <div className="p-6 text-right flex flex-col flex-grow">
+                                           <h3 className="text-xl font-bold text-white mb-2">{item.name}</h3>
+                                           <p className="text-lg font-semibold text-amber-400 mb-4">{item.price}</p>
+                                           <a 
+                                                href={item.productUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-block w-full text-center bg-amber-500 text-black font-bold py-2 px-6 rounded-md hover:bg-amber-400 transition-all duration-300 mt-auto"
+                                            >
+                                                عرض المنتج
+                                           </a>
+                                       </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-
-                    <button 
-                        onClick={() => handleStoreScroll('left')}
-                        disabled={!canStoreScroll.left}
-                        className="absolute top-1/2 -translate-y-1/2 -left-4 z-10 bg-white/10 backdrop-blur-sm text-white rounded-full w-12 h-12 flex items-center justify-center hover:bg-amber-500/50 transition-all duration-300 transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-[#242424] disabled:opacity-30 disabled:cursor-not-allowed disabled:scale-100"
-                        aria-label="السابق"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
-                    </button>
-
-                    <button 
-                        onClick={() => handleStoreScroll('right')}
-                        disabled={!canStoreScroll.right}
-                        className="absolute top-1/2 -translate-y-1/2 -right-4 z-10 bg-white/10 backdrop-blur-sm text-white rounded-full w-12 h-12 flex items-center justify-center hover:bg-amber-500/50 transition-all duration-300 transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-[#242424] disabled:opacity-30 disabled:cursor-not-allowed disabled:scale-100"
-                        aria-label="التالي"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
-                    </button>
+                    <button className="swiper-button-prev store-swiper-prev absolute top-1/2 -translate-y-1/2 -left-4 z-10 disabled:hidden" aria-label="السابق"></button>
+                    <button className="swiper-button-next store-swiper-next absolute top-1/2 -translate-y-1/2 -right-4 z-10 disabled:hidden" aria-label="التالي"></button>
                 </div>
             </div>
         </section>
@@ -755,7 +619,7 @@ const PublicSite: React.FC = () => {
         <section id="clients" className="py-24 bg-[#1a1a1a]">
             <div className="container mx-auto px-6 animate-on-scroll animate-fade-up">
                 <div className="text-center">
-                    <EditableText as="h2" isAdmin={false} value={content.clients.title} onChange={()=>{}} className="text-4xl lg:text-5xl font-bold mb-4 text-amber-400"/>
+                    <h2 className="text-4xl lg:text-5xl font-bold mb-4 text-amber-400">{content.clients.title}</h2>
                     <p className="text-lg text-gray-400 mb-12">موثوق به من قبل كبرى الشركات والمشاريع في المملكة</p>
                 </div>
                 <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-8">
@@ -795,7 +659,7 @@ const PublicSite: React.FC = () => {
                         <h3 className="text-xl font-semibold mb-2">الهاتف</h3>
                         <div className="flex items-center gap-4">
                             <a href={`tel:${content.contact.phone.replace(/\s/g, '')}`} className="text-gray-300 hover:text-amber-400 transition-colors">
-                                <EditableText as="span" isAdmin={false} value={content.contact.phone} onChange={()=>{}} className=""/>
+                                <span>{content.contact.phone}</span>
                             </a>
                             <a
                                 href={`https://wa.me/${content.contact.phone.replace(/[\s+]/g, '')}`}
@@ -811,7 +675,7 @@ const PublicSite: React.FC = () => {
                     <a href={`mailto:${content.contact.email}`} className="group flex flex-col items-center p-8 bg-[#1a1a1a] rounded-lg transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/10 hover:-translate-y-2 animate-on-scroll animate-fade-up" style={{transitionDelay: `200ms`}}>
                         <MailIcon className="w-12 h-12 text-amber-400 mb-4 transition-transform duration-300 group-hover:scale-110"/>
                         <h3 className="text-xl font-semibold mb-2">البريد الإلكتروني</h3>
-                        <EditableText as="p" isAdmin={false} value={content.contact.email} onChange={()=>{}} className="text-gray-300"/>
+                        <p className="text-gray-300">{content.contact.email}</p>
                     </a>
                     <div className="group flex flex-col items-center p-8 bg-[#1a1a1a] rounded-lg transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/10 hover:-translate-y-2 animate-on-scroll animate-fade-up" style={{transitionDelay: `300ms`}}>
                         <LocationIcon className="w-12 h-12 text-amber-400 mb-4 transition-transform duration-300 group-hover:scale-110"/>
@@ -822,7 +686,7 @@ const PublicSite: React.FC = () => {
                             rel="noopener noreferrer" 
                             className="text-gray-300 hover:text-amber-400 transition-colors"
                         >
-                            <EditableText as="span" isAdmin={false} value={content.contact.address} onChange={()=>{}} className=""/>
+                           <span>{content.contact.address}</span>
                         </a>
                     </div>
                 </div>
