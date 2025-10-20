@@ -4,9 +4,6 @@ import { PhoneIcon, MailIcon, LocationIcon, WhatsAppIcon, MansajLogo } from './c
 import { initialContent } from './content';
 import { AdminPage } from './components/Admin';
 
-// Add Swiper to the global scope for TypeScript
-declare var Swiper: any;
-
 const useIntersectionObserver = (options: IntersectionObserverInit) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -35,6 +32,148 @@ const useIntersectionObserver = (options: IntersectionObserverInit) => {
 
   return containerRef;
 };
+
+// --- Lazy Loading Image Component ---
+interface LazyImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {}
+
+const placeholderSrc = 'data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==';
+
+const LazyImage: React.FC<LazyImageProps> = ({ src, srcSet, className, alt, ...props }) => {
+    const [isLoaded, setIsLoaded] = useState(false);
+    const imageRef = useRef<HTMLImageElement>(null);
+
+    useEffect(() => {
+        const currentRef = imageRef.current;
+        if (!currentRef) return;
+
+        const observer = new IntersectionObserver(
+            (entries, obs) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        const img = entry.target as HTMLImageElement;
+                        if (src) img.src = src;
+                        if (srcSet) img.srcset = srcSet;
+                        obs.unobserve(img);
+                    }
+                });
+            },
+            { rootMargin: '200px 0px' } // Start loading 200px before it enters the viewport
+        );
+
+        observer.observe(currentRef);
+
+        return () => {
+            if (currentRef) {
+                observer.unobserve(currentRef);
+            }
+        };
+    }, [src, srcSet]);
+    
+    const handleLoad = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+        // We check if the src is not the placeholder to set the loaded state
+        // This prevents the fade-in from triggering for the placeholder
+        if((e.target as HTMLImageElement).src !== placeholderSrc) {
+            setIsLoaded(true);
+        }
+    };
+    
+    return (
+        <img
+            ref={imageRef}
+            src={placeholderSrc}
+            alt={alt}
+            onLoad={handleLoad}
+            className={`${className} bg-gray-800 transition-opacity duration-500 ease-in-out ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+            {...props}
+        />
+    );
+};
+
+
+const HorizontalCarousel: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollPrev, setCanScrollPrev] = useState(false);
+  const [canScrollNext, setCanScrollNext] = useState(true);
+
+  const checkButtons = useCallback(() => {
+    const el = scrollRef.current;
+    if (el) {
+      const { scrollLeft, scrollWidth, clientWidth } = el;
+      const maxScroll = scrollWidth - clientWidth;
+      const currentScroll = Math.abs(Math.round(scrollLeft));
+      setCanScrollPrev(currentScroll > 1);
+      setCanScrollNext(currentScroll < maxScroll - 1);
+    }
+  }, []);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) {
+      checkButtons();
+      el.addEventListener('scroll', checkButtons, { passive: true });
+      window.addEventListener('resize', checkButtons);
+      
+      const observer = new MutationObserver(checkButtons);
+      observer.observe(el, { childList: true, subtree: true });
+
+      return () => {
+        el.removeEventListener('scroll', checkButtons);
+        window.removeEventListener('resize', checkButtons);
+        observer.disconnect();
+      };
+    }
+  }, [checkButtons, children]);
+
+  const scroll = (direction: 'next' | 'prev') => {
+    const el = scrollRef.current;
+    if (el) {
+      const scrollAmount = el.clientWidth * 0.8;
+      // In RTL, "next" is scrolling left (negative) and "prev" is scrolling right (positive).
+      el.scrollBy({
+        left: direction === 'next' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth',
+      });
+    }
+  };
+
+  const ArrowButton: React.FC<{
+    direction: 'next' | 'prev';
+    onClick: () => void;
+    disabled: boolean;
+  }> = ({ direction, onClick, disabled }) => (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`absolute top-1/2 -translate-y-1/2 z-10 bg-white/10 backdrop-blur-sm text-white rounded-full w-12 h-12 flex items-center justify-center hover:bg-amber-500/50 transition-all duration-300 transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-black disabled:opacity-0 disabled:cursor-not-allowed ${
+        direction === 'next' ? 'left-0 sm:left-4' : 'right-0 sm:right-4'
+      }`}
+      aria-label={direction === 'next' ? 'التالي' : 'السابق'}
+    >
+      {/* SVGs are for an RTL layout */}
+      {direction === 'next' ? (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+      ) : (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+      )}
+    </button>
+  );
+
+  return (
+    <div className="relative group -mx-6 px-0 sm:px-6">
+      <div
+        ref={scrollRef}
+        className="flex gap-6 overflow-x-auto scrollbar-hide py-4 scroll-smooth px-6 sm:px-0"
+      >
+        {children}
+      </div>
+      <div className="hidden md:block opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <ArrowButton direction="next" onClick={() => scroll('next')} disabled={!canScrollNext} />
+        <ArrowButton direction="prev" onClick={() => scroll('prev')} disabled={!canScrollPrev} />
+      </div>
+    </div>
+  );
+};
+
 
 const ClientModal: React.FC<{ client: Client, onClose: () => void }> = ({ client, onClose }) => {
   const modalRef = React.useRef<HTMLDivElement>(null);
@@ -425,46 +564,6 @@ const PublicSite: React.FC = () => {
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  useEffect(() => {
-    if (!content.furniture.items.length) return;
-    const swiper = new Swiper('.furniture-swiper', {
-        loop: false,
-        slidesPerView: 1.2,
-        spaceBetween: 16,
-        rtl: true,
-        grabCursor: true,
-        navigation: {
-            nextEl: '.furniture-swiper-next',
-            prevEl: '.furniture-swiper-prev',
-        },
-        breakpoints: {
-            640: { slidesPerView: 2.5, spaceBetween: 24 },
-            1024: { slidesPerView: 3.5, spaceBetween: 24 },
-        },
-    });
-    return () => swiper.destroy();
-  }, [content.furniture.items]);
-
-  useEffect(() => {
-      if (!content.store.items.length) return;
-      const swiper = new Swiper('.store-swiper', {
-          loop: false,
-          slidesPerView: 1.1,
-          spaceBetween: 24,
-          rtl: true,
-          grabCursor: true,
-          navigation: {
-              nextEl: '.store-swiper-next',
-              prevEl: '.store-swiper-prev',
-          },
-          breakpoints: {
-              640: { slidesPerView: 2, spaceBetween: 32 },
-              1024: { slidesPerView: 3, spaceBetween: 32 },
-          },
-      });
-      return () => swiper.destroy();
-  }, [content.store.items]);
   
   const navLinkClasses = (sectionId: string) => 
     `relative transition-colors duration-300 ${activeSection === sectionId ? 'text-amber-400 font-bold' : 'hover:text-amber-400'} after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-0 after:h-0.5 after:bg-amber-400 after:transition-all after:duration-300 ${activeSection === sectionId ? 'after:w-full' : 'hover:after:w-full'}`;
@@ -552,28 +651,26 @@ const PublicSite: React.FC = () => {
                 <div className="text-center mb-16 animate-on-scroll animate-fade-up">
                     <h2 className="text-4xl lg:text-5xl font-bold text-amber-400">{content.furniture.title}</h2>
                 </div>
-                <div className="relative max-w-7xl mx-auto animate-on-scroll animate-fade-up">
-                    <div className="swiper furniture-swiper overflow-visible">
-                        <div className="swiper-wrapper">
-                            {content.furniture.items.map((item) => (
-                                <div key={item.id} className="swiper-slide">
-                                    <button 
-                                        onClick={() => setSelectedFurniture(item)}
-                                        className="group relative w-full h-full bg-[#242424] rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-amber-500/20 hover:-translate-y-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#1a1a1a]"
-                                        aria-label={`عرض ${item.name}`}
-                                    >
-                                        <img {...generateSrcSet(item.imageUrl)} sizes="(max-width: 640px) 80vw, 30vw" alt={item.name} loading="lazy" className="w-full h-64 object-cover"/>
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
-                                        <div className="absolute bottom-0 left-0 right-0 p-4">
-                                            <h3 className="text-lg font-bold text-white text-right">{item.name}</h3>
-                                        </div>
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                    <button className="swiper-button-prev furniture-swiper-prev absolute top-1/2 -translate-y-1/2 -left-4 z-10 disabled:hidden" aria-label="السابق"></button>
-                    <button className="swiper-button-next furniture-swiper-next absolute top-1/2 -translate-y-1/2 -right-4 z-10 disabled:hidden" aria-label="التالي"></button>
+                <div className="max-w-7xl mx-auto animate-on-scroll animate-fade-up">
+                    <HorizontalCarousel>
+                        {content.furniture.items.map((item) => (
+                           <div key={item.id} className="w-64 sm:w-72 md:w-80 flex-shrink-0">
+                                <button 
+                                    onClick={() => setSelectedFurniture(item)}
+                                    className="group relative block w-full bg-[#242424] rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-amber-500/20 hover:-translate-y-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#1a1a1a]"
+                                    aria-label={`عرض ${item.name}`}
+                                >
+                                    <div className="aspect-[3/4] w-full overflow-hidden">
+                                        <LazyImage {...generateSrcSet(item.imageUrl)} sizes="320px" alt={item.name} className="w-full h-full object-cover"/>
+                                    </div>
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+                                    <div className="absolute bottom-0 left-0 right-0 p-4">
+                                        <h3 className="text-lg font-bold text-white text-right">{item.name}</h3>
+                                    </div>
+                                </button>
+                            </div>
+                        ))}
+                    </HorizontalCarousel>
                 </div>
             </div>
         </section>
@@ -584,34 +681,30 @@ const PublicSite: React.FC = () => {
                     <h2 className="text-4xl lg:text-5xl font-bold text-amber-400">{content.store.title}</h2>
                     <p className="text-lg text-gray-400 mt-2">{content.store.subtitle}</p>
                 </div>
-                <div className="relative max-w-7xl mx-auto animate-on-scroll animate-fade-up">
-                    <div className="swiper store-swiper overflow-visible">
-                        <div className="swiper-wrapper">
-                            {content.store.items.map((item) => (
-                                <div key={item.id} className="swiper-slide h-auto">
-                                    <div className="group w-full h-full flex flex-col bg-[#1a1a1a] rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-amber-500/20 hover:-translate-y-2">
-                                       <div className="w-full h-72 overflow-hidden">
-                                          <img {...generateSrcSet(item.imageUrl)} sizes="(max-width: 640px) 90vw, 30vw" alt={item.name} loading="lazy" className="w-full h-full object-cover"/>
-                                       </div>
-                                       <div className="p-6 text-right flex flex-col flex-grow">
-                                           <h3 className="text-xl font-bold text-white mb-2">{item.name}</h3>
-                                           <p className="text-lg font-semibold text-amber-400 mb-4">{item.price}</p>
-                                           <a 
-                                                href={item.productUrl}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="inline-block w-full text-center bg-amber-500 text-black font-bold py-2 px-6 rounded-md hover:bg-amber-400 transition-all duration-300 mt-auto"
-                                            >
-                                                عرض المنتج
-                                           </a>
-                                       </div>
-                                    </div>
+                <div className="max-w-7xl mx-auto animate-on-scroll animate-fade-up">
+                     <HorizontalCarousel>
+                        {content.store.items.map((item) => (
+                           <div key={item.id} className="w-72 sm:w-80 flex-shrink-0">
+                                <div className="group w-full h-full flex flex-col bg-[#1a1a1a] rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-amber-500/20 hover:-translate-y-1 hover:scale-105">
+                                   <div className="w-full overflow-hidden aspect-square">
+                                      <LazyImage {...generateSrcSet(item.imageUrl)} sizes="320px" alt={item.name} className="w-full h-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-110"/>
+                                   </div>
+                                   <div className="p-6 text-right flex flex-col flex-grow">
+                                       <h3 className="text-xl font-bold text-white mb-2 h-14 overflow-hidden">{item.name}</h3>
+                                       <p className="text-lg font-semibold text-amber-400 mb-4">{item.price}</p>
+                                       <a 
+                                            href={item.productUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-block w-full text-center bg-amber-500 text-black font-bold py-2 px-6 rounded-md hover:bg-amber-400 transition-all duration-300 mt-auto"
+                                        >
+                                            عرض المنتج
+                                       </a>
+                                   </div>
                                 </div>
-                            ))}
-                        </div>
-                    </div>
-                    <button className="swiper-button-prev store-swiper-prev absolute top-1/2 -translate-y-1/2 -left-4 z-10 disabled:hidden" aria-label="السابق"></button>
-                    <button className="swiper-button-next store-swiper-next absolute top-1/2 -translate-y-1/2 -right-4 z-10 disabled:hidden" aria-label="التالي"></button>
+                            </div>
+                        ))}
+                    </HorizontalCarousel>
                 </div>
             </div>
         </section>

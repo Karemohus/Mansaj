@@ -31,9 +31,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
     
-    <!-- SwiperJS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
-
     <style>
       body {
         font-family: 'Cairo', sans-serif;
@@ -61,32 +58,6 @@
       .animate-fade-right {
         transform: translateX(40px);
       }
-      /* Swiper Custom Styles */
-      .swiper-button-next,
-      .swiper-button-prev {
-        width: 48px;
-        height: 48px;
-        background-color: rgba(36, 36, 36, 0.5);
-        backdrop-filter: blur(4px);
-        border-radius: 50%;
-        color: #fff;
-        transition: all 0.3s;
-      }
-      .swiper-button-next:hover,
-      .swiper-button-prev:hover {
-        background-color: rgba(251, 191, 36, 0.5); /* amber-400 with opacity */
-        transform: scale(1.1);
-      }
-      .swiper-button-next:after,
-      .swiper-button-prev:after {
-        font-size: 20px;
-        font-weight: bold;
-      }
-      .swiper-button-disabled {
-        opacity: 0.3;
-        cursor: not-allowed;
-        transform: scale(1);
-      }
     </style>
   <script type="importmap">
 {
@@ -97,10 +68,10 @@
   }
 }
 </script>
+<link rel="stylesheet" href="/index.css">
 </head>
   <body>
     <div id="root"></div>
-    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <script type="module" src="/index.tsx"></script>
   </body>
 </html>
